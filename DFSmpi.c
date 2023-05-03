@@ -3,6 +3,25 @@
 #include <stdbool.h>
 #include <mpi.h>
 
+void generate_large_structured_graph(int **graph, int n_vertices) {
+    // Clear the graph
+    for (int i = 0; i < n_vertices; i++) {
+        for (int j = 0; j < n_vertices; j++) {
+            graph[i][j] = 0;
+        }
+    }
+
+    // Connect vertices in a structured way
+    for (int i = 0; i < n_vertices - 1; i++) {
+        for (int j = i + 1; j < i + 1 + (n_vertices / 200); j++) {
+            if (j < n_vertices) {
+                graph[i][j] = 1;
+                graph[j][i] = 1;
+            }
+        }
+    }
+}
+
 void dfs(int **graph, bool *visited, int n_vertices, int vertex, int level) {
     visited[vertex] = true;
     printf("Visited vertex: %d, Level: %d\n", vertex, level);
@@ -15,39 +34,13 @@ void dfs(int **graph, bool *visited, int n_vertices, int vertex, int level) {
 }
 
 int main(int argc, char **argv) {
-    int n_vertices = 20;
+    int n_vertices = 10000;
     int **graph = malloc(n_vertices * sizeof(int *));
     for (int i = 0; i < n_vertices; i++) {
         graph[i] = calloc(n_vertices, sizeof(int));
     }
 
-// Edges: (0-1), (0-2), (1-3), (1-4), (2-5), (2-6), (3-7), (4-7), (5-8), (5-9), (6-9), (7-10), (7-11), (8-12), (8-13), (9-14), (9-15), (10-16), (11-17), (12-18), (13-18), (14-19), (15-19), (16-19), (17-19)
-graph[0][1] = graph[1][0] = 1;
-graph[0][2] = graph[2][0] = 1;
-graph[1][3] = graph[3][1] = 1;
-graph[1][4] = graph[4][1] = 1;
-graph[2][5] = graph[5][2] = 1;
-graph[2][6] = graph[6][2] = 1;
-graph[3][7] = graph[7][3] = 1;
-graph[4][7] = graph[7][4] = 1;
-graph[5][8] = graph[8][5] = 1;
-graph[5][9] = graph[9][5] = 1;
-graph[6][9] = graph[9][6] = 1;
-graph[7][10] = graph[10][7] = 1;
-graph[7][11] = graph[11][7] = 1;
-graph[8][12] = graph[12][8] = 1;
-graph[8][13] = graph[13][8] = 1;
-graph[9][14] = graph[14][9] = 1;
-graph[9][15] = graph[15][9] = 1;
-graph[10][16] = graph[16][10] = 1;
-graph[11][17] = graph[17][11] = 1;
-graph[12][18] = graph[18][12] = 1;
-graph[13][18] = graph[18][13] = 1;
-graph[14][19] = graph[19][14] = 1;
-graph[15][19] = graph[19][15] = 1;
-graph[16][19] = graph[19][16] = 1;
-graph[17][19] = graph[19][17] = 1;
-    // ...
+    generate_large_structured_graph(graph, n_vertices);
 
     bool *visited = calloc(n_vertices, sizeof(bool));
     int start_vertex = 0;

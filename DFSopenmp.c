@@ -5,7 +5,7 @@
 #include <omp.h>
 #include <stdbool.h>
 
-#define MAX_VERTICES 20000
+#define MAX_VERTICES 10000
 
 typedef struct Node {
     int vertex;
@@ -77,7 +77,7 @@ int main() {
     generate_large_structured_graph(n);
 
     clock_t begin = clock();
-    omp_set_num_threads(4);
+    omp_set_num_threads(1);
     dfs(n, 0);
 
     clock_t end = clock();
