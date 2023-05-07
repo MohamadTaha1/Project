@@ -3,8 +3,9 @@
 #include <time.h>
 #include <string.h>
 #include <omp.h>
+
 void bfs_kernel(int *graph, int *visited, int *level, int n_vertices, int *current_level_vertices, int current_level_size, int *next_level_vertices, int *next_level_size) {
-    #pragma omp parallel
+    #pragma omp parallel 
     {
         int local_next_level_size = 0;
         int *local_next_level_vertices = (int *)malloc(n_vertices * sizeof(int));
@@ -18,6 +19,8 @@ void bfs_kernel(int *graph, int *visited, int *level, int n_vertices, int *curre
                     visited[j] = 1;
                     level[j] = level[u] + 1;
                     local_next_level_vertices[local_next_level_size++] = j;
+                    printf("Thread: %d, Vertex: %d\n", omp_get_thread_num(), u);
+
                 }
             }
         }
@@ -37,10 +40,10 @@ void bfs_kernel(int *graph, int *visited, int *level, int n_vertices, int *curre
 void generate_complex_graph(int *graph, int n_vertices) {
     srand(time(NULL));
 
-    // Clear the graph
+   
     memset(graph, 0, n_vertices * n_vertices * sizeof(int));
 
-    // Connect vertices in a more complex way
+   
     for (int i = 0; i < n_vertices; i++) {
         int edges_to_add = rand() % (n_vertices / 5) + 1;
         for (int j = 0; j < edges_to_add; j++) {
@@ -94,15 +97,8 @@ int main() {
 
     generate_complex_graph(graph, n_vertices);
 
-    clock_t begin = clock();
-
     bfs(graph, n_vertices, 0);
-
-    clock_t end = clock();
-
-    double elapsed_time = (double)(end - begin) / CLOCKS_PER_SEC * 1000;
-    printf("Elapsed time: %.2f milliseconds\n", elapsed_time);
-
+  
     free(graph);
 
     return 0;

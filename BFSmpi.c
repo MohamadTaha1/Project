@@ -4,7 +4,7 @@
 #include <time.h>
 #include <mpi.h>
 
-// Function declarations
+
 void generate_complex_graph(int *graph, int n_vertices);
 void bfs(int *graph, int n_vertices, int start_vertex, int world_rank, int world_size);
 

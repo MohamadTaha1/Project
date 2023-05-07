@@ -1,4 +1,4 @@
-//working
+
 #include <stdio.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -106,13 +106,8 @@ int main() {
 
     generate_random_graph(graph, n_vertices, edge_probability);
 
-    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-
     bfs(graph.data(), n_vertices, 0);
-
-    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-
-    std::cout << "Elapsed time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << " milliseconds" << std::endl;
 
     return 0;
 }
+

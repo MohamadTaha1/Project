@@ -1,167 +1,95 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
 #include <stdbool.h>
-#include <math.h>
-#include <string.h>
 #include <time.h>
-#include <omp.h>
+#include <math.h>
 
-typedef struct Node {
-    int x, y;
-    double cost, priority;
-} Node;
+#define V 10000
 
-typedef struct PriorityQueue {
-    Node* nodes;
-    int count;
-    int capacity;
-} PriorityQueue;
+int graph[V][V]; 
+int dist[V]; 
+bool visited[V]; 
+int start, goal; 
 
-double heuristic(int x1, int y1, int x2, int y2) {
-    return sqrt(pow(x1 - x2, 2) + pow(y1 - y2, 2));
-}
 
-bool is_valid_move(int x, int y, int** grid, int grid_rows, int grid_cols) {
-    return x >= 0 && x < grid_rows && y >= 0 && y < grid_cols && grid[x][y] != -1;
-}
-
-int compare(const void* a, const void* b) {
-    Node* node_a = (Node*) a;
-    Node* node_b = (Node*) b;
-    return (node_a->priority > node_b->priority) - (node_a->priority < node_b->priority);
-}
-
-void push(PriorityQueue* pq, Node node) {
-    if (pq->count == pq->capacity) {
-        pq->capacity *= 2;
-        Node* new_nodes = (Node*) realloc(pq->nodes, pq->capacity * sizeof(Node));
-        if (new_nodes) {
-            pq->nodes = new_nodes;
-        } else {
-            printf("Memory allocation failed.\n");
-            exit(1);
+void initializeGraph() {
+    int weights[V] = {0}; 
+    for(int i = 0; i < V; i++) {
+        for(int j = 0; j < V; j++) {
+            if(i == j) {
+                graph[i][j] = 0;
+            } else {
+                int w = rand() % 100; 
+                graph[i][j] = weights[i] + w; 
+                weights[j] += w; 
+            }
         }
     }
-    pq->nodes[pq->count++] = node;
-    qsort(pq->nodes, pq->count, sizeof(Node), compare);
 }
 
-Node pop(PriorityQueue* pq) {
-    Node node = pq->nodes[0];
-    memmove(pq->nodes, pq->nodes + 1, (pq->count - 1) * sizeof(Node));
-    pq->count--;
-    return node;
+
+int heuristic(int node) {
+    int dx = abs(node / sqrt(V) - goal / sqrt(V));
+    int dy = abs(node % (int)sqrt(V) - goal % (int)sqrt(V));
+    return dx + dy;
 }
 
-bool is_empty(PriorityQueue* pq) {
-    return pq->count == 0;
-}
 
-void print_path(Node** came_from, Node start, Node goal) {
-    Node current = goal;
-    printf("Path: ");
-    while (current.x != start.x || current.y != start.y) {
-        printf("(%d, %d) -> ", current.x, current.y);
-        current = came_from[current.x][current.y];
+int minDistance() {
+    int min = INT_MAX, min_index;
+
+    for(int i = 0; i < V; i++) {
+        if(!visited[i] && dist[i] + heuristic(i) < min) {
+            min = dist[i] + heuristic(i);
+            min_index = i;
+        }
     }
-    printf("(%d, %d)\n", start.x, start.y);
+
+    return min_index;
 }
 
-void serial_a_star(int** grid, int grid_rows, int grid_cols, int start_x, int start_y, int goal_x, int goal_y) {
-    PriorityQueue open_set = {.nodes = (Node*) malloc(sizeof(Node)), .count = 0, .capacity = 1};
-    bool** closed_set = (bool**) malloc(grid_rows * sizeof(bool*));
-    for (int i = 0; i < grid_rows; i++) {
-        closed_set[i] = (bool*) calloc(grid_cols, sizeof(bool));
+
+void astar() {
+    for(int i = 0; i < V; i++) {
+        dist[i] = INT_MAX;
+        visited[i] = false;
     }
-    Node** came_from = (Node**) malloc(grid_rows * sizeof(Node*));
-    for (int i = 0; i < grid_rows; i++) {
-        came_from[i] = (Node*) malloc(grid_cols * sizeof(Node));
-    }
-    int moves[8][2] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {-1, -1}, {1, -1}, {-1, 1}};
 
-    Node start_node = {start_x, start_y, 0, heuristic(start_x, start_y, goal_x, goal_y)};
-    push(&open_set, start_node);
+    dist[start] = 0;
 
-    while (!is_empty(&open_set)) {
-        Node current = pop(&open_set);
+    clock_t start_time = clock();
 
-        if (current.x == goal_x && current.y == goal_y) {
-            print_path(came_from, start_node, current);
+    for(int count = 0; count < V - 1; count++) {
+        int u = minDistance();
+        visited[u] = true;
+
+        if(u == goal) {
             break;
         }
 
-        if (!closed_set[current.x][current.y]) {
-            closed_set[current.x][current.y] = true;
-
-            for (int i = 0; i < 8; i++) {
-                int new_x = current.x + moves[i][0];
-                int new_y = current.y + moves[i][1];
-
-                if (is_valid_move(new_x, new_y, grid, grid_rows, grid_cols)) {
-                    double new_cost = current.cost + heuristic(current.x, current.y, new_x, new_y);
-                    if (!closed_set[new_x][new_y]) {
-                        double new_priority = new_cost + heuristic(new_x, new_y, goal_x, goal_y);
-                        Node neighbor = (Node){new_x, new_y, new_cost, new_priority};
-                        push(&open_set, neighbor);
-                        came_from[new_x][new_y] = current;
-                    }
-                }
+        for(int v = 0; v < V; v++) {
+            if(!visited[v] && graph[u][v] && dist[u] != INT_MAX && dist[u] + graph[u][v] < dist[v]) {
+                dist[v] = dist[u] + graph[u][v];
             }
         }
     }
 
-    // Clean up
-    free(open_set.nodes);
-    for (int i = 0; i < grid_rows; i++) {
-        free(closed_set[i]);
-        free(came_from[i]);
-    }
-    free(closed_set);
-    free(came_from);
+    clock_t end_time = clock();
+
+    printf("Execution time: %f seconds\n", (double)(end_time - start_time) / CLOCKS_PER_SEC);
 }
 
-
-
 int main() {
-    int grid_rows = 500;
-    int grid_cols = 500;
-    int start_x = 0;
-    int start_y = 0;
-    int goal_x = 320;
-    int goal_y = 222;
-
-    int** grid = (int**) malloc(grid_rows * sizeof(int*));
-    for (int i = 0; i < grid_rows; i++) {
-        grid[i] = (int*) calloc(grid_cols, sizeof(int));
-    }
-
-    // Seed the random number generator
     srand(time(NULL));
+    initializeGraph();
 
-    // Add random obstacles
-    float obstacle_probability = 0.3; // Adjust this value to control the density of obstacles (0.0 to 1.0)
-    for (int i = 0; i < grid_rows; i++) {
-        for (int j = 0; j < grid_cols; j++) {
-            if (i == start_x && j == start_y) continue;
-            if (i == goal_x && j == goal_y) continue;
-            float random_value = (float)rand() / (float)RAND_MAX;
-            if (random_value < obstacle_probability) {
-                grid[i][j] = -1;
-            }
-        }
-    }
+    start = 0;
+    goal = V - 1;
 
-    clock_t start_time = clock();
-    serial_a_star(grid, grid_rows, grid_cols, start_x, start_y, goal_x, goal_y);
-    clock_t end_time = clock();
-    double execution_time = (double)(end_time - start_time) / CLOCKS_PER_SEC;
-    printf("Execution time: %f seconds\n", execution_time);
+    astar();
 
-    for (int i = 0; i < grid_rows; i++) {
-        free(grid[i]);
-    }
-    free(grid);
+    printf("Shortest distance between nodes %d and %d: %d\n", start, goal, dist[goal]);
 
     return 0;
 }
-
